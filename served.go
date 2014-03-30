@@ -228,7 +228,7 @@ func main() {
 
 func startWork() {
 	for _, f := range conf.VDirs {
-		http.Handle("/"+f.Root, http.StripPrefix("/", http.FileServer(http.Dir(f.Folder))))
+		http.Handle("/"+f.Root, http.FileServer(http.Dir(f.Folder)))
 	}
 	if err := http.ListenAndServe(conf.Addr, nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
