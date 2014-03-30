@@ -27,6 +27,7 @@ var (
 	svcRun     bool
 	conf       Config
 	cfgFile    string
+	doLog      bool
 )
 
 func locateConfigFile() string {
@@ -83,7 +84,7 @@ func readConfig(cfgFile string) (c Config) {
 			if strings.TrimSpace(f.Folder) != f.Folder || strings.TrimSpace(f.Folder) == "" {
 				log.Fatalf("Invalid Folder specified in configuration file %s: \"%s\"", cfgFile, f.Folder)
 			}
-			if strings.TrimSpace(f.Root) != f.Root {
+			if strings.TrimSpace(f.Root) != f.Root || strings.TrimSpace(f.Root) == "" {
 				log.Fatalf("Invalid Root specified in configuration file %s: \"%s\"", cfgFile, f.Root)
 			}
 		}
@@ -92,6 +93,18 @@ func readConfig(cfgFile string) (c Config) {
 		c.Addr = ":8080"
 	}
 	return
+}
+
+type RequestLogger struct {
+	h http.Handler
+	log bool
+}
+
+func (rl RequestLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if rl.log {
+		log.Print(r.Host, r.URL)
+	}
+	rl.h.ServeHTTP(w, r)
 }
 
 func init() {
@@ -123,6 +136,7 @@ func init() {
 	flag.BoolVar(&svcRun, "run", false, "Run the AutoPoster standalone (not as a service)")
 	flag.BoolVar(&svcStart, "start", false, "Start the AutoPoster service")
 	flag.BoolVar(&svcStop, "stop", false, "Stop the AutoPoster service")
+	flag.BoolVar(&doLog, "log", false, "Log requests")
 
 	flag.Parse()
 
@@ -228,7 +242,11 @@ func main() {
 
 func startWork() {
 	for _, f := range conf.VDirs {
-		http.Handle("/"+f.Root, http.FileServer(http.Dir(f.Folder)))
+		if f.Root == "/" {
+			http.Handle(f.Root, RequestLogger{http.FileServer(http.Dir(f.Folder)), doLog})
+		} else {
+			http.Handle(f.Root, RequestLogger{http.StripPrefix(f.Root, http.FileServer(http.Dir(f.Folder))), doLog})
+		}
 	}
 	if err := http.ListenAndServe(conf.Addr, nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
