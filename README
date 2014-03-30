@@ -1,0 +1,6 @@
+served is a simple web server for static files.
+
+To install:
+
+go get github.com/ancientlore/served
+
