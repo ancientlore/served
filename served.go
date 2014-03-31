@@ -99,6 +99,10 @@ func readConfig(cfgFile string) (c Config) {
 			if v.Folder == "" {
 				log.Fatalf("Invalid Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
 			}
+			_, err := os.Stat(v.Folder)
+			if err != nil {
+				log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
+			}
 			v.Root = strings.TrimSpace(v.Root)
 			if v.Root == "" {
 				log.Fatalf("Invalid Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
