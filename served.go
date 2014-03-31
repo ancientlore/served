@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	VERSION = "0.1"
+	VERSION = "0.2"
 )
 
 var (
@@ -54,6 +54,11 @@ func locateConfigFile() string {
 	return filepath.FromSlash(exePath) + "served.config"
 }
 
+type Server struct {
+	Addr  string `json:"Addr"`
+	Hosts []Host `json:"Hosts"`
+}
+
 type Host struct {
 	Hostname string `json:"Hostname"`
 	VDirs    []VDir `json:"VDirs"`
@@ -65,8 +70,7 @@ type VDir struct {
 }
 
 type Config struct {
-	Addr  string `json:"Addr"`
-	Hosts []Host `json:"Hosts"`
+	Servers []Server `json:"Servers"`
 }
 
 func readConfig(cfgFile string) (c Config) {
@@ -83,35 +87,37 @@ func readConfig(cfgFile string) (c Config) {
 	if err != nil {
 		log.Fatalf("Unable to parse configuration file %s: %s", cfgFile, err)
 	}
-	if len(c.Hosts) == 0 {
-		log.Fatalf("No Hosts specified in configuration file %s", cfgFile)
-	}
-	for _, h := range c.Hosts {
-		h.Hostname = strings.TrimSpace(h.Hostname)
-		if h.Hostname == "" {
-			log.Fatalf("Invalid Hostname specified in configuration file %s: \"%s\"", cfgFile, h.Hostname)
+	for _, s := range c.Servers {
+		if len(s.Hosts) == 0 {
+			log.Fatalf("No Hosts specified in configuration file %s for server %s", cfgFile, s.Addr)
 		}
-		if len(h.VDirs) == 0 {
-			log.Fatalf("No VDirs specified in configuration file %s for host \"%s\"", cfgFile, h.Hostname)
+		for _, h := range s.Hosts {
+			h.Hostname = strings.TrimSpace(h.Hostname)
+			if h.Hostname == "" {
+				log.Fatalf("Invalid Hostname specified in configuration file %s: \"%s\"", cfgFile, h.Hostname)
+			}
+			if len(h.VDirs) == 0 {
+				log.Fatalf("No VDirs specified in configuration file %s for host \"%s\"", cfgFile, h.Hostname)
+			}
+			for _, v := range h.VDirs {
+				v.Folder = strings.TrimSpace(v.Folder)
+				if v.Folder == "" {
+					log.Fatalf("Invalid Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
+				}
+				_, err := os.Stat(v.Folder)
+				if err != nil {
+					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
+				}
+				v.Root = strings.TrimSpace(v.Root)
+				if v.Root == "" {
+					log.Fatalf("Invalid Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
+				}
+			}
 		}
-		for _, v := range h.VDirs {
-			v.Folder = strings.TrimSpace(v.Folder)
-			if v.Folder == "" {
-				log.Fatalf("Invalid Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
-			}
-			_, err := os.Stat(v.Folder)
-			if err != nil {
-				log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
-			}
-			v.Root = strings.TrimSpace(v.Root)
-			if v.Root == "" {
-				log.Fatalf("Invalid Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
-			}
+		s.Addr = strings.TrimSpace(s.Addr)
+		if s.Addr == "" {
+			s.Addr = ":8080"
 		}
-	}
-	c.Addr = strings.TrimSpace(c.Addr)
-	if c.Addr == "" {
-		c.Addr = ":8080"
 	}
 	return
 }
@@ -273,24 +279,29 @@ func main() {
 }
 
 func startWork() {
-	hostMap := make(map[string]*http.ServeMux, 0)
-	for _, host := range conf.Hosts {
-		mux := http.NewServeMux()
-		for _, v := range host.VDirs {
-			var h http.Handler
-			h = http.FileServer(http.Dir(v.Folder))
-			if v.Root != "/" {
-				h = http.StripPrefix(v.Root, h)
+	for _, s := range(conf.Servers) {
+		hostMap := make(map[string]*http.ServeMux, 0)
+		for _, host := range s.Hosts {
+			mux := http.NewServeMux()
+			for _, v := range host.VDirs {
+				var h http.Handler
+				h = http.FileServer(http.Dir(v.Folder))
+				if v.Root != "/" {
+					h = http.StripPrefix(v.Root, h)
+				}
+				if doLog {
+					h = LogRequest(h)
+				}
+				mux.Handle(v.Root, h)
 			}
-			if doLog {
-				h = LogRequest(h)
-			}
-			mux.Handle(v.Root, h)
+			hostMap[host.Hostname] = mux
 		}
-		hostMap[host.Hostname] = mux
-	}
-	if err := http.ListenAndServe(conf.Addr, SelectHost(hostMap)); err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		go func(addr string, hm map[string]*http.ServeMux) {
+			if err := http.ListenAndServe(addr, SelectHost(hm)); err != nil {
+				log.Fatal("ListenAndServe: ", err)
+			}
+		}(s.Addr, hostMap)
+		log.Printf("Server %s added", s.Addr)
 	}
 }
 
