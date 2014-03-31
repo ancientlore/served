@@ -54,6 +54,11 @@ func locateConfigFile() string {
 	return filepath.FromSlash(exePath) + "served.config"
 }
 
+type Host struct {
+	Hostname string `json:"Hostname"`
+	VDirs    []VDir `json:"VDirs"`
+}
+
 type VDir struct {
 	Root   string `json:"Root"`
 	Folder string `json:"Folder"`
@@ -61,7 +66,7 @@ type VDir struct {
 
 type Config struct {
 	Addr  string `json:"Addr"`
-	VDirs []VDir `json:"VDirs"`
+	Hosts []Host `json:"Hosts"`
 }
 
 func readConfig(cfgFile string) (c Config) {
@@ -78,33 +83,56 @@ func readConfig(cfgFile string) (c Config) {
 	if err != nil {
 		log.Fatalf("Unable to parse configuration file %s: %s", cfgFile, err)
 	}
-	if len(c.VDirs) == 0 {
-		log.Fatalf("No VDirs specified in configuration file %s", cfgFile)
-		for _, f := range c.VDirs {
-			if strings.TrimSpace(f.Folder) != f.Folder || strings.TrimSpace(f.Folder) == "" {
-				log.Fatalf("Invalid Folder specified in configuration file %s: \"%s\"", cfgFile, f.Folder)
+	if len(c.Hosts) == 0 {
+		log.Fatalf("No Hosts specified in configuration file %s", cfgFile)
+	}
+	for _, h := range c.Hosts {
+		h.Hostname = strings.TrimSpace(h.Hostname)
+		if h.Hostname == "" {
+			log.Fatalf("Invalid Hostname specified in configuration file %s: \"%s\"", cfgFile, h.Hostname)
+		}
+		if len(h.VDirs) == 0 {
+			log.Fatalf("No VDirs specified in configuration file %s for host \"%s\"", cfgFile, h.Hostname)
+		}
+		for _, v := range h.VDirs {
+			v.Folder = strings.TrimSpace(v.Folder)
+			if v.Folder == "" {
+				log.Fatalf("Invalid Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
 			}
-			if strings.TrimSpace(f.Root) != f.Root || strings.TrimSpace(f.Root) == "" {
-				log.Fatalf("Invalid Root specified in configuration file %s: \"%s\"", cfgFile, f.Root)
+			v.Root = strings.TrimSpace(v.Root)
+			if v.Root == "" {
+				log.Fatalf("Invalid Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
 			}
 		}
 	}
-	if strings.TrimSpace(c.Addr) == "" {
+	c.Addr = strings.TrimSpace(c.Addr)
+	if c.Addr == "" {
 		c.Addr = ":8080"
 	}
 	return
 }
 
-type RequestLogger struct {
-	h http.Handler
-	log bool
+func SelectHost(hostMap map[string]*http.ServeMux) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hosts := strings.Split(r.Host, ":")
+		host := ""
+		if len(hosts) > 0 {
+			host = hosts[0]
+		}
+		m, ok := hostMap[host]
+		if !ok || m == nil {
+			http.NotFound(w, r)
+		} else {
+			m.ServeHTTP(w, r)
+		}
+	})
 }
 
-func (rl RequestLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if rl.log {
+func LogRequest(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Print(r.Host, r.URL)
-	}
-	rl.h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r)
+	})
 }
 
 func init() {
@@ -241,14 +269,23 @@ func main() {
 }
 
 func startWork() {
-	for _, f := range conf.VDirs {
-		if f.Root == "/" {
-			http.Handle(f.Root, RequestLogger{http.FileServer(http.Dir(f.Folder)), doLog})
-		} else {
-			http.Handle(f.Root, RequestLogger{http.StripPrefix(f.Root, http.FileServer(http.Dir(f.Folder))), doLog})
+	hostMap := make(map[string]*http.ServeMux, 0)
+	for _, host := range conf.Hosts {
+		mux := http.NewServeMux()
+		for _, v := range host.VDirs {
+			var h http.Handler
+			h = http.FileServer(http.Dir(v.Folder))
+			if v.Root != "/" {
+				h = http.StripPrefix(v.Root, h)
+			}
+			if doLog {
+				h = LogRequest(h)
+			}
+			mux.Handle(v.Root, h)
 		}
+		hostMap[host.Hostname] = mux
 	}
-	if err := http.ListenAndServe(conf.Addr, nil); err != nil {
+	if err := http.ListenAndServe(conf.Addr, SelectHost(hostMap)); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
