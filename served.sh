@@ -9,6 +9,8 @@
 # Short-Description: served web server
 # Description:       served is a simple web server
 ### END INIT INFO
+
+# don't forget: sudo update-rc.d served.sh defaults
  
 # Change the next 3 lines to suit where you install your script and what you want to call it
 DIR=/home/pi/gocode/bin
