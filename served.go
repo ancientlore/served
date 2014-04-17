@@ -4,6 +4,9 @@ package main
 import (
 	"bitbucket.org/kardianos/service"
 	"code.google.com/p/go.tools/blog"
+	"code.google.com/p/go.tools/godoc/static"
+	_ "code.google.com/p/go.tools/playground"
+	"code.google.com/p/go.tools/playground/socket"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,8 +16,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"strings"
+	"time"
 )
 
 const (
@@ -62,9 +67,11 @@ type Server struct {
 }
 
 type Host struct {
-	Hostname string `json:"Hostname"`
-	VDirs    []VDir `json:"VDirs"`
-	Blogs    []Blog `json:"Blogs"`
+	Hostname     string `json:"Hostname"`
+	VDirs        []VDir `json:"VDirs"`
+	Blogs        []Blog `json:"Blogs"`
+	PlayEnabled  bool   `json:"PlayEnabled"`
+	NativeClient bool   `json:"NativeClient"`
 }
 
 type VDir struct {
@@ -78,7 +85,6 @@ type Blog struct {
 	HomeArticles int    `json:"HomeArticles"`
 	FeedArticles int    `json:"FeedArticles"`
 	FeedTitle    string `json:"FeedTitle"`
-	PlayEnabled  bool   `json:"PlayEnabled"`
 }
 
 type Config struct {
@@ -325,7 +331,7 @@ func startWork() {
 					GodocURL:     "",
 					HomeArticles: v.HomeArticles, // articles to display on the home page
 					FeedArticles: v.FeedArticles, // articles to include in Atom and JSON feeds
-					PlayEnabled:  v.PlayEnabled,
+					PlayEnabled:  host.PlayEnabled,
 					FeedTitle:    v.FeedTitle,
 					ContentPath:  filepath.Join(v.Folder, "content"),
 					TemplatePath: filepath.Join(v.Folder, "template"),
@@ -353,6 +359,32 @@ func startWork() {
 				mux.Handle(v.Root, h)
 			}
 
+			if len(host.Blogs) > 0 {
+				mux.Handle("/lib/godoc/", http.StripPrefix("/lib/godoc/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					name := r.URL.Path
+					b, ok := static.Files[name]
+					if !ok {
+						http.NotFound(w, r)
+						return
+					}
+					http.ServeContent(w, r, name, time.Time{}, strings.NewReader(b))
+				})))
+
+				if host.PlayEnabled {
+					if host.NativeClient {
+						socket.RunScripts = false
+						socket.Environ = func() []string {
+							if runtime.GOARCH == "amd64" {
+								return environ("GOOS=nacl", "GOARCH=amd64p32")
+							}
+							return environ("GOOS=nacl")
+						}
+					}
+					// playScript(basePath, "SocketTransport")
+					mux.Handle("/socket", socket.Handler)
+				}
+			}
+
 			for _, v := range host.VDirs {
 				var h http.Handler
 				h = http.FileServer(http.Dir(v.Folder))
@@ -375,6 +407,24 @@ func startWork() {
 		}(s.Addr, hostMap)
 		log.Printf("Server %s added", s.Addr)
 	}
+}
+
+func environ(vars ...string) []string {
+	env := os.Environ()
+	for _, r := range vars {
+		k := strings.SplitAfter(r, "=")[0]
+		var found bool
+		for i, v := range env {
+			if strings.HasPrefix(v, k) {
+				env[i] = r
+				found = true
+			}
+		}
+		if !found {
+			env = append(env, r)
+		}
+	}
+	return env
 }
 
 func stopWork() {
