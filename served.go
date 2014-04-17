@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	VERSION = "0.2"
+	VERSION = "0.3"
 )
 
 var (
@@ -382,6 +382,12 @@ func startWork() {
 					}
 					// playScript(basePath, "SocketTransport")
 					mux.Handle("/socket", socket.Handler)
+
+					if !strings.HasPrefix(host.Hostname, "127.0.0.1") &&
+						!strings.HasPrefix(host.Hostname, "localhost") &&
+						host.PlayEnabled && !host.NativeClient {
+						log.Print(localhostWarning)
+					}
 				}
 			}
 
@@ -439,3 +445,17 @@ func stopWork() {
 		}
 	}
 }
+
+const localhostWarning = `
+WARNING!  WARNING!  WARNING!
+
+The present server appears to be listening on an address that is not localhost.
+Anyone with access to this address and port will have access to this machine as
+the user running present.
+
+To avoid this message, listen on localhost or run with -play=false.
+
+If you don't understand this message, hit Control-C to terminate this process.
+
+WARNING!  WARNING!  WARNING!
+`
