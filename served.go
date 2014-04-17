@@ -3,6 +3,7 @@ package main
 
 import (
 	"bitbucket.org/kardianos/service"
+	"code.google.com/p/go.tools/blog"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -28,6 +29,7 @@ var (
 	conf       Config
 	cfgFile    string
 	doLog      bool
+	reload     bool
 )
 
 func locateConfigFile() string {
@@ -62,11 +64,21 @@ type Server struct {
 type Host struct {
 	Hostname string `json:"Hostname"`
 	VDirs    []VDir `json:"VDirs"`
+	Blogs    []Blog `json:"Blogs"`
 }
 
 type VDir struct {
 	Root   string `json:"Root"`
 	Folder string `json:"Folder"`
+}
+
+type Blog struct {
+	Root         string `json:"Root"`
+	Folder       string `json:"Folder"`
+	HomeArticles int    `json:"HomeArticles"`
+	FeedArticles int    `json:"FeedArticles"`
+	FeedTitle    string `json:"FeedTitle"`
+	PlayEnabled  bool   `json:"PlayEnabled"`
 }
 
 type Config struct {
@@ -102,7 +114,7 @@ func readConfig(cfgFile string) (c Config) {
 			for _, v := range h.VDirs {
 				v.Folder = strings.TrimSpace(v.Folder)
 				if v.Folder == "" {
-					log.Fatalf("Invalid Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
+					log.Fatalf("Invalid vdir Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
 				}
 				_, err := os.Stat(v.Folder)
 				if err != nil {
@@ -110,7 +122,27 @@ func readConfig(cfgFile string) (c Config) {
 				}
 				v.Root = strings.TrimSpace(v.Root)
 				if v.Root == "" {
-					log.Fatalf("Invalid Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
+					log.Fatalf("Invalid vdir Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
+				}
+			}
+			for _, v := range h.Blogs {
+				v.Folder = strings.TrimSpace(v.Folder)
+				if v.Folder == "" {
+					log.Fatalf("Invalid blog Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
+				}
+				_, err := os.Stat(v.Folder)
+				if err != nil {
+					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
+				}
+				v.Root = strings.TrimSpace(v.Root)
+				if v.Root == "" {
+					log.Fatalf("Invalid blog Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
+				}
+				if v.HomeArticles <= 0 {
+					log.Fatalf("Invalid blog HomeArticles specified in configuration file %s for host \"%s\": %d", cfgFile, h.Hostname, v.HomeArticles)
+				}
+				if v.FeedArticles <= 0 {
+					log.Fatalf("Invalid blog FeedArticles specified in configuration file %s for host \"%s\": %d", cfgFile, h.Hostname, v.FeedArticles)
 				}
 			}
 		}
@@ -175,6 +207,7 @@ func init() {
 	flag.BoolVar(&svcStart, "start", false, "Start served service")
 	flag.BoolVar(&svcStop, "stop", false, "Stop served service")
 	flag.BoolVar(&doLog, "log", false, "Log requests")
+	flag.BoolVar(&reload, "reload", false, "reload blog content on each page load")
 
 	flag.Parse()
 
@@ -279,10 +312,47 @@ func main() {
 }
 
 func startWork() {
-	for _, s := range(conf.Servers) {
+	for _, s := range conf.Servers {
 		hostMap := make(map[string]*http.ServeMux, 0)
 		for _, host := range s.Hosts {
 			mux := http.NewServeMux()
+
+			for _, v := range host.Blogs {
+				config := blog.Config{
+					Hostname:     host.Hostname,
+					BaseURL:      "http://" + host.Hostname,
+					BasePath:     strings.TrimSuffix(v.Root, "/"),
+					GodocURL:     "",
+					HomeArticles: v.HomeArticles, // articles to display on the home page
+					FeedArticles: v.FeedArticles, // articles to include in Atom and JSON feeds
+					PlayEnabled:  v.PlayEnabled,
+					FeedTitle:    v.FeedTitle,
+					ContentPath:  filepath.Join(v.Folder, "content"),
+					TemplatePath: filepath.Join(v.Folder, "template"),
+				}
+				var h http.Handler
+				var err error
+				if reload {
+					h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						s, err := blog.NewServer(config)
+						if err != nil {
+							http.Error(w, err.Error(), 500)
+							return
+						}
+						s.ServeHTTP(w, r)
+					})
+				} else {
+					h, err = blog.NewServer(config)
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+				if doLog {
+					h = LogRequest(h)
+				}
+				mux.Handle(v.Root, h)
+			}
+
 			for _, v := range host.VDirs {
 				var h http.Handler
 				h = http.FileServer(http.Dir(v.Folder))
@@ -294,8 +364,10 @@ func startWork() {
 				}
 				mux.Handle(v.Root, h)
 			}
+
 			hostMap[host.Hostname] = mux
 		}
+
 		go func(addr string, hm map[string]*http.ServeMux) {
 			if err := http.ListenAndServe(addr, SelectHost(hm)); err != nil {
 				log.Fatal("ListenAndServe: ", err)
