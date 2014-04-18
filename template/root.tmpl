@@ -1,0 +1,126 @@
+{{/* This template is combined with other templates to render blog pages. */}}
+
+{{define "root"}}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gopher</title>
+	<link rel="SHORTCUT ICON" href="static/favicon.ico">
+	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+	<link rel="alternate" type="application/atom+xml" title="gopher - Atom Feed" href="http://gopher.skyegg.com/feed.atom" />
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+	<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+	<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+	<![endif]-->
+	<script type="text/javascript">window.initFuncs = [];</script>
+</head>
+<body role="document">
+<div class="container">
+
+<div class="jumbotron">
+<h1>Gopher</h1>
+</div>
+<div class="page-header">
+
+
+
+
+
+<div id="page">
+<div class="container">
+
+<div id="sidebar">
+	{{with .Doc}}
+		{{with .Newer}}
+			<h4>Next article</h4>
+			<p><a href="{{.Path}}">{{.Title}}</a></p>
+		{{end}}
+		
+		{{with .Older}}
+			<h4>Previous article</h4>
+			<p><a href="{{.Path}}">{{.Title}}</a></p>
+		{{end}}
+		
+		{{with .Related}}
+			<h4>Related articles</h4>
+			<ul>
+			{{range .}}
+				<li><a href="{{.Path}}">{{.Title}}</a></li>
+			{{end}}
+			</ul>
+		{{end}}
+	{{end}}
+		
+	<h4>Blog Archive</h4>
+	<p><a href="{{.BasePath}}/index">Article index</a></p>
+</div><!-- #sidebar -->
+
+<div id="content">
+	<h1><a href="{{.BasePath}}/">Gopher Blog</a></h1>
+	{{template "content" .}}
+</div><!-- #content -->
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script> -->
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<!-- <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script> -->
+</body>
+
+<script src="/lib/godoc/jquery.js"></script>
+<script src="/lib/godoc/playground.js"></script>
+<script src="/lib/godoc/play.js"></script>
+<script src="/lib/godoc/godocs.js"></script>
+<script>
+$(function() {
+	// Insert line numbers for all playground elements.
+	$('.playground > pre.numbers, .code > pre.numbers').each(function() {
+		var $spans = $(this).find('> span');
+
+		// Compute width of number column (including trailing space).
+		var max = 0;
+		$spans.each(function() {
+			var n = $(this).attr('num')*1;
+			if (n > max) max = n;
+		});
+		var width = 2;
+		while (max > 10) {
+			max = max / 10;
+			width++;
+		}
+
+		// Insert line numbers with space padding.
+		$spans.each(function() {
+			var n = $(this).attr('num')+' ';
+			while (n.length < width) n = ' '+n;
+			$('<span class="number">').text(n).insertBefore(this);
+		});
+	});
+
+	initPlayground(new SocketTransport());
+});
+</script>
+</html>
+{{end}}
+
+{{define "doc"}}
+	<div class="article">
+		<h3 class="title"><a href="{{.Path}}">{{.Title}}</a></h3>
+		<p class="date">{{.Time.Format "2 January 2006"}}</p>
+		{{.HTML}}
+		{{with .Authors}}
+			<p class="author">By {{authors .}}</p>
+		{{end}}
+	</div>
+{{end}}
