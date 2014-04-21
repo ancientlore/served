@@ -5,6 +5,7 @@ import (
 	"code.google.com/p/go.tools/godoc/static"
 	_ "code.google.com/p/go.tools/playground"
 	"code.google.com/p/go.tools/playground/socket"
+	"github.com/ancientlore/served/slides"
 	"log"
 	"net/http"
 	"os"
@@ -56,6 +57,23 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 					h = logRequest(h)
 				}
 				mux.Handle(v.Root, h)
+
+				// slide server
+				slidePath := strings.TrimSuffix(v.Root, "/") + "/slides/"
+				sconf := slides.Config{
+					ContentPath:  filepath.Join(v.Folder, "content"),
+					TemplatePath: filepath.Join(v.Folder, "template/slides"),
+					BasePath:     slidePath,
+					PlayEnabled:  host.PlayEnabled,
+				}
+				h, err = slides.NewServer(sconf)
+				if err != nil {
+					return nil, err
+				}
+				if conf.Log {
+					h = logRequest(h)
+				}
+				mux.Handle(slidePath, h)
 			}
 
 			if len(host.Blogs) > 0 {

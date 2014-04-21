@@ -1,0 +1,54 @@
+A Test
+Go slides
+09:33 16 Apr 2014
+Tags: test, go
+
+Michael Lore
+Sr. Director of R&D, Concur
+http://lore.skyegg.com/
+@ancientlore
+
+* Testing out Present
+
+Yes, let's try it out.
+
+	This is preformatted.
+
+* Next slide
+
+And
+
+.code puzz.go /^const/,/^\)/
+
+Ok.
+
+* Title of slide or section (must have asterisk)
+
+Some Text
+
+- bullets
+- more bullets
+- a bullet with
+
+Some More text
+
+  Preformatted text
+  is indented (however you like)
+
+.image gopher640.jpg
+
+* Weird
+
+.play puzz.go
+
+* Ok then
+
+.iframe http://lore.skyegg.com/ 500 800
+
+* A link
+
+.link http://www.yahoo.com/ Yahoo!
+
+- [[http://www.google.com/][Google]]
+- Another
+
