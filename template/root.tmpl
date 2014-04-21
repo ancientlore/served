@@ -8,11 +8,11 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="Gopher">
+	<meta name="description" content="You've been served.">
 	<meta name="author" content="@ancientlore">
 	<link rel="SHORTCUT ICON" href="static/favicon.ico">
 
-	<title>Gopher</title>
+	<title>served</title>
 
 	<!-- Bootstrap core CSS -->
 	<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
@@ -20,7 +20,7 @@
 	<!-- Custom styles for this template -->
 	<link href="static/blog.css" rel="stylesheet">
 
-	<link rel="alternate" type="application/atom+xml" title="gopher - Atom Feed" href="http://gopher.skyegg.com/feed.atom" />
+	<link rel="alternate" type="application/atom+xml" title="served - Atom Feed" href="{{.BasePath}}/feed.atom" />
 
 	<!-- Just for debugging purposes. Don't actually copy this line! -->
 	<!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
@@ -40,7 +40,7 @@
   <div class="container">
 	<nav class="blog-nav">
 	  <a class="blog-nav-item active" href="{{.BasePath}}/">Home</a>
-	  <a class="blog-nav-item" href="http://lore.skyegg.com/">lore.skyegg.com</a>
+	  <a class="blog-nav-item" href="https://github.com/ancientlore/served">served on GitHub</a>
 	</nav>
   </div>
 </div>
@@ -48,8 +48,8 @@
 <div class="container">
 
 	<div class="blog-header">
-		<h1 class="blog-title"><a href="{{.BasePath}}/">Gopher Blog</a></h1>
-		<p class="lead blog-description">The gopher blog.</p>
+		<h1 class="blog-title"><a href="{{.BasePath}}/">served</a></h1>
+		<p class="lead blog-description">You've been <a href="https://github.com/ancientlore/served">served</a>.</p>
 	</div>
 
 	<div class="row">
@@ -63,7 +63,7 @@
 		<div class="col-sm-3 col-sm-offset-1 blog-sidebar">
 		  <div class="sidebar-module sidebar-module-inset">
 			<h4>About</h4>
-			<p>Watch the gopher.</p>
+			<p><a href="https://github.com/ancientlore/served">served</a> is a simple web server written in Go. In addition to static content, it supports blogging with <a href="https://code.google.com/p/go.tools/present">present</a> markup and slideshows.</p>
 			<img src="static/gotv.png"/>
 		  </div>
 		  <div class="sidebar-module">
@@ -95,7 +95,6 @@
 			<ol class="list-unstyled">
 			  <li><a href="https://github.com/ancientlore">GitHub</a></li>
 			  <li><a href="https://twitter.com/ancientlore">Twitter</a></li>
-			  <li><a href="https://www.flickr.com/photos/lore/">Flickr</a></li>
 			</ol>
 		  </div>
 		</div><!-- /.blog-sidebar -->
