@@ -1,11 +1,10 @@
-A Test
+Sample Presentation
 Go slides
 09:33 16 Apr 2014
 Tags: test, go
 
 Michael Lore
-Sr. Director of R&D, Concur
-http://lore.skyegg.com/
+http://gopher.skyegg.com/
 @ancientlore
 
 * Testing out Present
@@ -16,7 +15,7 @@ Yes, let's try it out.
 
 * Next slide
 
-And
+The TripIt T-Shirt puzzle:
 
 .code puzz.go /^const/,/^\)/
 
@@ -37,18 +36,17 @@ Some More text
 
 .image gopher640.jpg
 
-* Weird
+* Play some code
 
 .play puzz.go
 
 * Ok then
 
-.iframe http://lore.skyegg.com/ 500 800
+.iframe puzz.go 500 800
 
 * A link
 
 .link http://www.yahoo.com/ Yahoo!
 
 - [[http://www.google.com/][Google]]
-- Another
 

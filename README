@@ -1,4 +1,6 @@
-served is a simple web server for static files.
+served is a simple web server written in Go.
+
+In addition to static content, it supports blogging with *present* markup and slideshows.
 
 To install:
 
