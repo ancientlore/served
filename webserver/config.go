@@ -52,8 +52,9 @@ type Host struct {
 
 // VDir represents a virtual directory for serving static files
 type VDir struct {
-	Root   string `json:"Root"`   // Root of the vdir on the web server
-	Folder string `json:"Folder"` // Folder on disk
+	Root     string `json:"Root"`   // Root of the vdir on the web server
+	Folder   string `json:"Folder"` // Folder on disk
+	Disabled bool   // Set to true if the folder cannot be found
 }
 
 // Blog represents a blog to be served
@@ -63,6 +64,7 @@ type Blog struct {
 	HomeArticles int    `json:"HomeArticles"` // How many articles to show on the home page
 	FeedArticles int    `json:"FeedArticles"` // How many articles to show in the atom feed
 	FeedTitle    string `json:"FeedTitle"`    // Title of the atom feed
+	Disabled     bool   // Set to true if the folder cannot be found
 }
 
 // Config holds the configuration of the web server
@@ -97,6 +99,7 @@ func ReadConfig(cfgFile string) (c Config) {
 				log.Fatalf("Invalid Hostname specified in configuration file %s: \"%s\"", cfgFile, h.Hostname)
 			}
 			for _, v := range h.VDirs {
+				v.Disabled = false
 				v.Folder = strings.TrimSpace(v.Folder)
 				if v.Folder == "" {
 					log.Fatalf("Invalid vdir Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
@@ -104,6 +107,7 @@ func ReadConfig(cfgFile string) (c Config) {
 				_, err := os.Stat(v.Folder)
 				if err != nil {
 					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
+					v.Disabled = true
 				}
 				v.Root = strings.TrimSpace(v.Root)
 				if v.Root == "" {
@@ -111,6 +115,7 @@ func ReadConfig(cfgFile string) (c Config) {
 				}
 			}
 			for _, v := range h.Blogs {
+				v.Disabled = false
 				v.Folder = strings.TrimSpace(v.Folder)
 				if v.Folder == "" {
 					log.Fatalf("Invalid blog Folder specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Folder)
@@ -118,6 +123,7 @@ func ReadConfig(cfgFile string) (c Config) {
 				_, err := os.Stat(v.Folder)
 				if err != nil {
 					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
+					v.Disabled = true
 				}
 				v.Root = strings.TrimSpace(v.Root)
 				if v.Root == "" {

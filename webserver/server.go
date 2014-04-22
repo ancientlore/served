@@ -24,56 +24,58 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 			mux := http.NewServeMux()
 
 			for _, v := range host.Blogs {
-				config := blog.Config{
-					Hostname:     host.Hostname,
-					BaseURL:      "http://" + host.Hostname,
-					BasePath:     strings.TrimSuffix(v.Root, "/"),
-					GodocURL:     "",
-					HomeArticles: v.HomeArticles, // articles to display on the home page
-					FeedArticles: v.FeedArticles, // articles to include in Atom and JSON feeds
-					PlayEnabled:  host.PlayEnabled,
-					FeedTitle:    v.FeedTitle,
-					ContentPath:  filepath.Join(v.Folder, "content"),
-					TemplatePath: filepath.Join(v.Folder, "template"),
-				}
-				var h http.Handler
-				var err error
-				if conf.Reload {
-					h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						s, err := blog.NewServer(config)
+				if !v.Disabled {
+					config := blog.Config{
+						Hostname:     host.Hostname,
+						BaseURL:      "http://" + host.Hostname,
+						BasePath:     strings.TrimSuffix(v.Root, "/"),
+						GodocURL:     "",
+						HomeArticles: v.HomeArticles, // articles to display on the home page
+						FeedArticles: v.FeedArticles, // articles to include in Atom and JSON feeds
+						PlayEnabled:  host.PlayEnabled,
+						FeedTitle:    v.FeedTitle,
+						ContentPath:  filepath.Join(v.Folder, "content"),
+						TemplatePath: filepath.Join(v.Folder, "template"),
+					}
+					var h http.Handler
+					var err error
+					if conf.Reload {
+						h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							s, err := blog.NewServer(config)
+							if err != nil {
+								http.Error(w, err.Error(), 500)
+								return
+							}
+							s.ServeHTTP(w, r)
+						})
+					} else {
+						h, err = blog.NewServer(config)
 						if err != nil {
-							http.Error(w, err.Error(), 500)
-							return
+							return nil, err
 						}
-						s.ServeHTTP(w, r)
-					})
-				} else {
-					h, err = blog.NewServer(config)
+					}
+					if conf.Log {
+						h = logRequest(h)
+					}
+					mux.Handle(v.Root, h)
+
+					// slide server
+					slidePath := strings.TrimSuffix(v.Root, "/") + "/slides/"
+					sconf := slides.Config{
+						ContentPath:  filepath.Join(v.Folder, "content"),
+						TemplatePath: filepath.Join(v.Folder, "template/slides"),
+						BasePath:     slidePath,
+						PlayEnabled:  host.PlayEnabled,
+					}
+					h, err = slides.NewServer(sconf)
 					if err != nil {
 						return nil, err
 					}
+					if conf.Log {
+						h = logRequest(h)
+					}
+					mux.Handle(slidePath, h)
 				}
-				if conf.Log {
-					h = logRequest(h)
-				}
-				mux.Handle(v.Root, h)
-
-				// slide server
-				slidePath := strings.TrimSuffix(v.Root, "/") + "/slides/"
-				sconf := slides.Config{
-					ContentPath:  filepath.Join(v.Folder, "content"),
-					TemplatePath: filepath.Join(v.Folder, "template/slides"),
-					BasePath:     slidePath,
-					PlayEnabled:  host.PlayEnabled,
-				}
-				h, err = slides.NewServer(sconf)
-				if err != nil {
-					return nil, err
-				}
-				if conf.Log {
-					h = logRequest(h)
-				}
-				mux.Handle(slidePath, h)
 			}
 
 			if len(host.Blogs) > 0 {
@@ -109,15 +111,17 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 			}
 
 			for _, v := range host.VDirs {
-				var h http.Handler
-				h = http.FileServer(http.Dir(v.Folder))
-				if v.Root != "/" {
-					h = http.StripPrefix(v.Root, h)
+				if !v.Disabled {
+					var h http.Handler
+					h = http.FileServer(http.Dir(v.Folder))
+					if v.Root != "/" {
+						h = http.StripPrefix(v.Root, h)
+					}
+					if conf.Log {
+						h = logRequest(h)
+					}
+					mux.Handle(v.Root, h)
 				}
-				if conf.Log {
-					h = logRequest(h)
-				}
-				mux.Handle(v.Root, h)
 			}
 
 			hostMap[host.Hostname] = mux
