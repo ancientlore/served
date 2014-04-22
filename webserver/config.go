@@ -98,7 +98,7 @@ func ReadConfig(cfgFile string) (c Config) {
 			if h.Hostname == "" {
 				log.Fatalf("Invalid Hostname specified in configuration file %s: \"%s\"", cfgFile, h.Hostname)
 			}
-			for _, v := range h.VDirs {
+			for i, v := range h.VDirs {
 				v.Disabled = false
 				v.Folder = strings.TrimSpace(v.Folder)
 				if v.Folder == "" {
@@ -107,14 +107,14 @@ func ReadConfig(cfgFile string) (c Config) {
 				_, err := os.Stat(v.Folder)
 				if err != nil {
 					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
-					v.Disabled = true
+					h.VDirs[i].Disabled = true
 				}
 				v.Root = strings.TrimSpace(v.Root)
 				if v.Root == "" {
 					log.Fatalf("Invalid vdir Root specified in configuration file %s for host \"%s\": \"%s\"", cfgFile, h.Hostname, v.Root)
 				}
 			}
-			for _, v := range h.Blogs {
+			for i, v := range h.Blogs {
 				v.Disabled = false
 				v.Folder = strings.TrimSpace(v.Folder)
 				if v.Folder == "" {
@@ -123,7 +123,7 @@ func ReadConfig(cfgFile string) (c Config) {
 				_, err := os.Stat(v.Folder)
 				if err != nil {
 					log.Printf("Warning: Cannot stat folder \"%s\": %s", v.Folder, err)
-					v.Disabled = true
+					h.Blogs[i].Disabled = true
 				}
 				v.Root = strings.TrimSpace(v.Root)
 				if v.Root == "" {

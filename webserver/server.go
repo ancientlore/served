@@ -75,6 +75,8 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 						h = logRequest(h)
 					}
 					mux.Handle(slidePath, h)
+				} else {
+					log.Printf("Skipping disabled blog %s%s", host.Hostname, v.Root)
 				}
 			}
 
@@ -121,6 +123,8 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 						h = logRequest(h)
 					}
 					mux.Handle(v.Root, h)
+				} else {
+					log.Printf("Skipping disabled vdir %s%s", host.Hostname, v.Root)
 				}
 			}
 
