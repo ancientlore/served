@@ -37,6 +37,8 @@ the number of articles to list in the atom feed, and the feed title:
 
 .code ../served.config /"Blogs":/,/\]/
 
+The blog folder must have a *template* folder (for the go templates for the site) and a *content* folder (for articles, slides, and other content). Additionally, there should be a *static* folder configured as a VDir to hold some web content needed by the templates. Sames of these are available on [[https://github.com/ancientlore/served][GitHub]].
+
 * Enabling "play" mode
 
 If you enable play mode, users can compile and execute Go code from the web page! This should probably not be enabled on a public web site, however. served has not been particularly hardened.

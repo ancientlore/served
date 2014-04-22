@@ -1,52 +1,109 @@
+served
 Sample Presentation
-Go slides
-09:33 16 Apr 2014
-Tags: test, go
+09:30 22 Apr 2014
+Tags: served, go
 
 Michael Lore
 http://gopher.skyegg.com/
 @ancientlore
 
-* Testing out Present
+* What is served?
 
-Yes, let's try it out.
+[[https://github.com/ancientlore/served][served]] is a simple web server written in Go. It serves three kinds of content:
+
+- Static files
+- Blog articles written in *present* format
+- Slideshows written in *present* format
+
+In addition to a great HTTP library, the Go authors provided some very useful libraries and code for blogging:
+
+- [[https://code.google.com/p/go.tools/present][go.tools/present]] is a wiki-like markup format
+- [[https://code.google.com/p/go.tools/blog][go.tools/blog]] is a blogging engine written for the [[http://blog.golang.org/][Go blog]]
+- [[https://code.google.com/p/go.talks/present][go.talks/present]] is a slideshow tool using Present format
+
+served puts a framework around these that allows you to configure servers that respond on different ports, hosts, and paths.
+
+* The configuration file
+
+served's configuration file is a simple JSON file. Servers can be defined to listen on unique addresses. Each server can support responding to multiple host names.
+
+* Setting up a static site
+
+Static sites need to specify a web root ending in "/" and a folder on disk:
+
+.code ../served.config /"VDirs":/,/\]/
+
+* Setting up a blog
+
+In addition to the settings for a static site, blogs need to specify the number of articles to show on the home page,
+the number of articles to list in the atom feed, and the feed title:
+
+.code ../served.config /"Blogs":/,/\]/
+
+The blog folder must have a *template* folder (for the go templates for the site) and a *content* folder (for articles, slides, and other content). Additionally, there should be a *static* folder configured as a VDir to hold some web content needed by the templates. Sames of these are available on [[https://github.com/ancientlore/served][GitHub]].
+
+* Enabling "play" mode
+
+If you enable play mode, users can compile and execute Go code from the web page! This should probably not be enabled on a public web site, however. served has not been particularly hardened.
+
+.code ../served.config /"PlayEnabled":/,/}/
+
+* Slideshows
+
+When a blog is configured, you can view articles and slide shows in an alternate format by using the "slides" URL:
+
+.link slides/test.slide
+.link slides/introduction.article
+
+* Present markup
+
+The following sections show some of the things you can do with present format.
+
+* Preformatted text
+
+Simply indent to get preformatted text.
 
 	This is preformatted.
 
-* Next slide
+* Showing code from another file
 
-The TripIt T-Shirt puzzle:
+	.code puzz.go /^const/,/^\)/
 
 .code puzz.go /^const/,/^\)/
 
-Ok.
+* Bullets
 
-* Title of slide or section (must have asterisk)
-
-Some Text
+	- bullets
+	- more bullets
 
 - bullets
 - more bullets
-- a bullet with
 
-Some More text
+* Images
 
-  Preformatted text
-  is indented (however you like)
+	.image gopher640.jpg 400 400
 
-.image gopher640.jpg
+.image gopher640.jpg 400 400
 
-* Play some code
+* Play Code
+
+	.play puzz.go
 
 .play puzz.go
 
-* Ok then
+* Use an iframe
 
-.iframe puzz.go 500 800
+	.iframe puzz.go 500 500
 
-* A link
+.iframe puzz.go 500 500
+
+* Links
+
+	.link http://www.yahoo.com/ Yahoo!
 
 .link http://www.yahoo.com/ Yahoo!
 
-- [[http://www.google.com/][Google]]
+	Another format is [[http://www.google.com/][Google]]
+
+Another format is [[http://www.google.com/][Google]]
 
