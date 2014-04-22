@@ -27,7 +27,7 @@ func init() {
 		displayName = "Simple Web Server"
 		desc        = "served is a simple web server written in Go."
 		CONFIG_FILE = "served.config"
-		VERSION     = "0.4"
+		VERSION     = "0.5"
 	)
 
 	var help bool
