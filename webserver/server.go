@@ -5,6 +5,7 @@ import (
 	"code.google.com/p/go.tools/godoc/static"
 	_ "code.google.com/p/go.tools/playground"
 	"code.google.com/p/go.tools/playground/socket"
+	"code.google.com/p/go.tools/present"
 	"github.com/ancientlore/served/slides"
 	"log"
 	"net"
@@ -20,11 +21,14 @@ import (
 // CreateServers creates the handlers needed for serving the site(s) listed in the given configuration.
 func CreateServers(conf Config) (map[string]http.Handler, error) {
 	handlers := make(map[string]http.Handler, 0)
+	play := false
 	for _, s := range conf.Servers {
 		hostMap := make(map[string]*http.ServeMux, 0)
 		for _, host := range s.Hosts {
 			mux := http.NewServeMux()
-
+			if host.PlayEnabled {
+				play = true
+			}
 			for _, v := range host.Blogs {
 				if !v.Disabled {
 					config := blog.Config{
@@ -147,6 +151,9 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 		}
 
 		handlers[s.Addr] = selectHost(hostMap)
+	}
+	if play {
+		present.PlayEnabled = true
 	}
 
 	return handlers, nil

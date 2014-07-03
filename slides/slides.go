@@ -50,7 +50,8 @@ func isDoc(path string) bool {
 }
 
 func (conf Config) playable(c present.Code) bool {
-	return present.PlayEnabled && c.Play && conf.PlayEnabled
+	//log.Print(present.PlayEnabled, c.Play, conf.PlayEnabled, c.Ext)
+	return present.PlayEnabled && c.Play && conf.PlayEnabled && c.Ext == ".go"
 }
 
 // renderDoc reads the present file, builds its template representation,
