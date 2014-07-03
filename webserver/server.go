@@ -7,7 +7,9 @@ import (
 	"code.google.com/p/go.tools/playground/socket"
 	"github.com/ancientlore/served/slides"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -102,12 +104,25 @@ func CreateServers(conf Config) (map[string]http.Handler, error) {
 						}
 					}
 					// playScript(basePath, "SocketTransport")
-					mux.Handle("/socket", socket.Handler)
+					origin := &url.URL{Scheme: "http"}
+					h, p, err := net.SplitHostPort(s.Addr)
+					if err != nil {
+						log.Printf("Cannot enable play on %s: %s", host.Hostname, err)
+					} else {
+						if host.Hostname != "" {
+							h = host.Hostname
+						}
+						if p == "" {
+							p = "80"
+						}
+						origin.Host = net.JoinHostPort(h, p)
+						mux.Handle("/socket", socket.NewHandler(origin))
 
-					if !strings.HasPrefix(host.Hostname, "127.0.0.1") &&
-						!strings.HasPrefix(host.Hostname, "localhost") &&
-						host.PlayEnabled && !host.NativeClient {
-						log.Print(localhostWarning)
+						if !strings.HasPrefix(host.Hostname, "127.0.0.1") &&
+							!strings.HasPrefix(host.Hostname, "localhost") &&
+							host.PlayEnabled && !host.NativeClient {
+							log.Print(localhostWarning)
+						}
 					}
 				}
 			}
