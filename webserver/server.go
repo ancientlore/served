@@ -1,12 +1,12 @@
 package webserver
 
 import (
-	"code.google.com/p/go.tools/blog"
-	"code.google.com/p/go.tools/godoc/static"
-	_ "code.google.com/p/go.tools/playground"
-	"code.google.com/p/go.tools/playground/socket"
-	"code.google.com/p/go.tools/present"
 	"github.com/ancientlore/served/slides"
+	"golang.org/x/tools/blog"
+	"golang.org/x/tools/godoc/static"
+	_ "golang.org/x/tools/playground"
+	"golang.org/x/tools/playground/socket"
+	"golang.org/x/tools/present"
 	"log"
 	"net"
 	"net/http"

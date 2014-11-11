@@ -17,9 +17,9 @@ http://gopher.skyegg.com/
 
 In addition to a great HTTP library, the Go authors provided some very useful libraries and code for blogging:
 
-- [[https://code.google.com/p/go.tools/present][go.tools/present]] is a wiki-like markup format
-- [[https://code.google.com/p/go.tools/blog][go.tools/blog]] is a blogging engine written for the [[http://blog.golang.org/][Go blog]]
-- [[https://code.google.com/p/go.talks/present][go.talks/present]] is a slideshow tool using Present format
+- [[https://golang.org/x/tools/present][x/tools/present]] is a wiki-like markup format
+- [[https://golang.org/x/tools/blog][x/tools/blog]] is a blogging engine written for the [[http://blog.golang.org/][Go blog]]
+- [[https://golang.org/x/talks/present][x/talks/present]] is a slideshow tool using Present format
 
 served puts a framework around these that allows you to configure servers that respond on different ports, hosts, and paths.
 

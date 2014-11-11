@@ -2,14 +2,13 @@ package slides
 
 import (
 	"fmt"
+	"golang.org/x/tools/present"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-
-	"code.google.com/p/go.tools/present"
 )
 
 // Config specifies Server configuration values.
