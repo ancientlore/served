@@ -2,10 +2,10 @@
 package main
 
 import (
-	"bitbucket.org/kardianos/service"
 	"flag"
 	"fmt"
 	"github.com/ancientlore/served/webserver"
+	"github.com/kardianos/service"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +16,7 @@ var (
 	cpuprofile string
 	memprofile string
 	wsServed   service.Service
+	wsLogger   service.Logger
 	svcRun     bool
 	conf       webserver.Config
 	cfgFile    string
@@ -75,7 +76,12 @@ func init() {
 	conf.Log = doLog
 
 	var err error
-	wsServed, err = service.NewService(name, displayName, desc)
+	var i impl
+	wsServed, err = service.New(i, &service.Config{Name: name, DisplayName: displayName, Description: desc})
+	if err != nil {
+		log.Fatal(err)
+	}
+	wsLogger, err = wsServed.Logger(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +96,7 @@ func init() {
 		log.Printf("Service \"%s\" installed.\n", displayName)
 		os.Exit(0)
 	} else if svcRemove == true {
-		err = wsServed.Remove()
+		err = wsServed.Uninstall()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -111,6 +117,24 @@ func init() {
 		log.Printf("Service \"%s\" stopped.\n", displayName)
 		os.Exit(0)
 	}
+}
+
+type impl int
+
+func (i impl) Start(s service.Service) error {
+	// start
+	go startWork()
+	wsLogger.Info(fmt.Sprintf("Started served using config file \"%s\"", cfgFile))
+	log.Printf("Started served using config file \"%s\"\n", cfgFile)
+	return nil
+}
+
+func (i impl) Stop(s service.Service) error {
+	// stop
+	stopWork()
+	wsLogger.Info("Stopped served")
+	log.Println("Stopped served")
+	return nil
 }
 
 func main() {
@@ -141,21 +165,9 @@ func main() {
 		}
 		stopWork()
 	} else {
-		err = wsServed.Run(func() error {
-			// start
-			go startWork()
-			wsServed.Info(fmt.Sprintf("Started served using config file \"%s\"", cfgFile))
-			log.Printf("Started served using config file \"%s\"\n", cfgFile)
-			return nil
-		}, func() error {
-			// stop
-			stopWork()
-			wsServed.Info("Stopped served")
-			log.Println("Stopped served")
-			return nil
-		})
+		err = wsServed.Run()
 		if err != nil {
-			wsServed.Error(err.Error())
+			wsLogger.Error(err.Error())
 			log.Println(err)
 		}
 	}
