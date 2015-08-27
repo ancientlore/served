@@ -13,4 +13,4 @@ To install:
 
 go get github.com/ancientlore/served
 
-Check out the served at http://gopher.skyegg.com/
+Get served at http://served.ancientlore.io/
