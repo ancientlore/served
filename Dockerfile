@@ -1,16 +1,14 @@
-FROM golang:alpine
+FROM golang:1.8.3 as builder
+WORKDIR /go/src/github.com/ancientlore/served
+ADD . .
+RUN CGO_ENABLED=0 GOOS=linux go get .
+RUN CGO_ENABLED=0 GOOS=linux go install
 
-RUN apk add --update git subversion mercurial && rm -rf /var/cache/apk/*
-
+FROM alpine:latest
+WORKDIR /go
 ADD demo.config /go/etc/served.config
 ADD . /go/src/github.com/ancientlore/served
-
-WORKDIR /go/src/github.com/ancientlore/served
-
-RUN go get
-RUN go install
-
-WORKDIR /go
+COPY --from=builder /go/bin/served /go/bin/served
 
 ENTRYPOINT ["/go/bin/served", "-run"]
 
