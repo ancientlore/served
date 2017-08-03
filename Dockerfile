@@ -1,4 +1,4 @@
-FROM golang:1.8.3 as builder
+FROM golang as builder
 WORKDIR /go/src/github.com/ancientlore/served
 ADD . .
 RUN CGO_ENABLED=0 GOOS=linux go get .
