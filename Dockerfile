@@ -1,10 +1,10 @@
 FROM golang as builder
 WORKDIR /go/src/github.com/ancientlore/served
 ADD . .
-RUN CGO_ENABLED=0 GOOS=linux go get .
-RUN CGO_ENABLED=0 GOOS=linux go install
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go get .
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go install
 
-FROM alpine:latest
+FROM gcr.io/distroless/base
 WORKDIR /go
 ADD demo.config /go/etc/served.config
 ADD . /go/src/github.com/ancientlore/served
