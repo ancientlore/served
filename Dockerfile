@@ -6,7 +6,6 @@ RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go install
 WORKDIR /go/foo
 RUN echo "root:x:0:0:user:/home:/bin/bash" > passwd && echo "nobody:x:65534:65534:user:/home:/bin/bash" >> passwd
 RUN echo "root:x:0:" > group && echo "nobody:x:65534:" >> group
-RUN cat /go/foo/passwd && cat /go/foo/group
 
 FROM gcr.io/distroless/static:latest
 COPY demo.config /go/etc/served.config
