@@ -1,5 +1,21 @@
 language: go
 
+services:
+  - docker
+
+env:
+  GO111MODULE=on
+
 go:
-  - 1.12
-  - tip
+  - 1.12.7
+
+before_install:
+  #- go get github.com/mattn/goveralls
+
+script:
+  #- go test -v ./...
+  #- go test -v -covermode=count -coverprofile=coverage.out ./...
+  #- $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t ancientlore/served:${TRAVIS_TAG:-latest} .
+  - docker push ancientlore/served:${TRAVIS_TAG:-latest}
