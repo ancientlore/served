@@ -2,13 +2,15 @@ package slides
 
 import (
 	"fmt"
-	"golang.org/x/tools/present"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"golang.org/x/tools/present"
 )
 
 // Config specifies Server configuration values.
@@ -19,9 +21,27 @@ type Config struct {
 	PlayEnabled  bool
 }
 
+// containsSpecialFile reports whether name contains a path element starting with a period
+// or is another kind of special file. The name is assumed to be a delimited by forward
+// slashes, as guaranteed by the http.FileSystem interface.
+func containsSpecialFile(name string) bool {
+	parts := strings.Split(name, "/")
+	for _, part := range parts {
+		if strings.HasPrefix(part, ".") {
+			return true
+		}
+	}
+	return false
+}
+
 func NewServer(conf Config) (http.Handler, error) {
 	fs := http.FileServer(http.Dir(conf.ContentPath))
 	return http.StripPrefix(conf.BasePath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if containsSpecialFile(r.URL.Path) {
+			log.Println("Path not allowed")
+			http.Error(w, "Path not allowed", http.StatusBadRequest)
+			return
+		}
 		name := filepath.Join(".", filepath.FromSlash(r.URL.Path))
 		if isDoc(name) {
 			err := conf.renderDoc(w, conf.ContentPath, name)
