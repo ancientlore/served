@@ -9,7 +9,7 @@ env:
 go:
   - 1.17.x
 
-before_install:
+#before_install:
   #- go get github.com/mattn/goveralls
 
 script:
