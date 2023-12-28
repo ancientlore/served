@@ -2,7 +2,7 @@ module github.com/ancientlore/served
 
 require (
 	github.com/kardianos/service v1.2.2
-	golang.org/x/tools v0.16.0
+	golang.org/x/tools v0.16.1
 )
 
 require (
